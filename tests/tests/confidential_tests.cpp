@@ -64,14 +64,18 @@ BOOST_AUTO_TEST_CASE( confidential_test )
 
    auto InB1  = fc::sha256::hash("InB1");
    auto InB2  = fc::sha256::hash("InB2");
+   auto InB3  = fc::sha256::hash("InB3");
+   auto InB4  = fc::sha256::hash("InB4");
    auto OutB  = fc::sha256::hash("InB2");
    auto nonce1 = fc::sha256::hash("nonce");
    auto nonce2 = fc::sha256::hash("nonce2");
 
    out1.commitment  = fc::ecc::blind(InB1,250);
+   out1.asset_commitment = fc::ecc::blind(InB3, uint64_t(core.get_id()));
    out1.range_proof = fc::ecc::range_proof_sign( 0, out1.commitment, InB1, nonce1, 0, 0, 250 );
 
    out2.commitment = fc::ecc::blind(InB2,750);
+   out2.asset_commitment = fc::ecc::blind(InB4, uint64_t(core.get_id()));
    out2.range_proof = fc::ecc::range_proof_sign( 0, out2.commitment, InB1, nonce2, 0, 0, 750 );
 
    to_blind.blinding_factor = fc::ecc::blind_sum( {InB1,InB2}, 2 );
@@ -94,7 +98,7 @@ BOOST_AUTO_TEST_CASE( confidential_test )
 
    blind_transfer_operation blind_tr;
    blind_tr.fee = core.amount(10);
-   blind_tr.inputs.push_back( {out2.commitment, out2.owner} );
+   blind_tr.inputs.push_back( {out2.commitment, out2.asset_commitment, out2.owner} );
    blind_tr.outputs = {out3,out4};
    blind_tr.validate();
    trx.operations = {blind_tr};
@@ -106,6 +110,7 @@ BOOST_AUTO_TEST_CASE( confidential_test )
 
    Out4B  = fc::ecc::blind_sum( {InB2,Out3B}, 1 ); // add InB2 - Out3b
    out4.commitment = fc::ecc::blind(Out4B,750-300-11);
+   out4.asset_commitment = fc::ecc::blind(Out4B, uint64_t(core.get_id()));
    auto out4_amount = 750-300-10;
    out4.range_proof = fc::ecc::range_proof_sign( 0, out3.commitment, InB1, nonce1, 0, 0, 750-300-11 );
    blind_tr.outputs = {out4,out3};
@@ -121,7 +126,7 @@ BOOST_AUTO_TEST_CASE( confidential_test )
    from_blind.to  = nathan.id;
    from_blind.amount = core.amount( out4_amount - 10 );
    from_blind.blinding_factor = Out4B;
-   from_blind.inputs.push_back( {out4.commitment, out4.owner} );
+   from_blind.inputs.push_back( {out4.commitment, out4.asset_commitment, out4.owner} );
    trx.operations = {from_blind};
    trx.signatures.clear();
    db.push_transaction(trx);

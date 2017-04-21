@@ -3912,7 +3912,8 @@ blind_confirmation wallet_api::transfer_from_blind( string from_blind_account_ke
    from_blind.to = to_account.id;
    from_blind.amount = amount;
    from_blind.blinding_factor = conf.outputs.back().decrypted_memo.blinding_factor;
-   from_blind.inputs.push_back( {conf.outputs.back().decrypted_memo.commitment, authority() } );
+   from_blind.inputs.push_back( {conf.outputs.back().decrypted_memo.commitment,
+                                 conf.outputs.back().decrypted_memo.asset_commitment, authority() } );
    from_blind.fee  = fees->calculate_fee( from_blind, asset_obj->options.core_exchange_rate );
 
    idump( (from_blind) );
@@ -3997,7 +3998,7 @@ blind_confirmation wallet_api::blind_transfer_help( string from_key_or_label,
       }
       else
       {
-         blind_tr.inputs.push_back({start->commitment(), start->control_authority});
+         blind_tr.inputs.push_back({start->commitment(), start->asset_commitment(), start->control_authority});
          blinding_factors.push_back( start->data.blinding_factor );
          total_amount += start->amount;
 

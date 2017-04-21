@@ -100,6 +100,7 @@ struct blind_receipt
    std::pair<public_key_type,fc::time_point>        to_date()const   { return std::make_pair(to_key,date);   }
    std::tuple<public_key_type,asset_id_type,bool>   to_asset_used()const   { return std::make_tuple(to_key,amount.asset_id,used);   }
    const commitment_type& commitment()const        { return data.commitment; }
+   const commitment_type& asset_commitment()const  { return data.asset_commitment; }
 
    fc::time_point                  date;
    public_key_type                 from_key;

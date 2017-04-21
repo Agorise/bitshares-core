@@ -83,6 +83,7 @@ struct blind_memo
 struct blind_input
 {
    fc::ecc::commitment_type      commitment;
+   fc::ecc::commitment_type      asset_commitment;
    /** provided to maintain the invariant that all authority
     * required by an operation is explicit in the operation.  Must
     * match blinded_balance_id->owner
@@ -104,7 +105,9 @@ struct stealth_confirmation
       optional<public_key_type> from;
       asset                     amount;
       fc::sha256                blinding_factor;
+      fc::sha256                asset_blinding_factor;
       fc::ecc::commitment_type  commitment;
+      fc::ecc::commitment_type  asset_commitment;
       uint32_t                  check = 0;
    };
 
@@ -133,6 +136,7 @@ struct stealth_confirmation
 struct blind_output
 {
    fc::ecc::commitment_type                commitment;
+   fc::ecc::commitment_type                asset_commitment;
    /** only required if there is more than one blind output */
    range_proof_type                        range_proof;
    authority                               owner;
@@ -157,6 +161,7 @@ struct transfer_to_blind_operation : public base_operation
    asset                 amount;
    account_id_type       from;
    blind_factor_type     blinding_factor;
+   blind_factor_type     asset_blinding_factor;
    vector<blind_output>  outputs;
 
    account_id_type fee_payer()const { return from; }
@@ -178,6 +183,7 @@ struct transfer_from_blind_operation : public base_operation
    asset                 amount;
    account_id_type       to;
    blind_factor_type     blinding_factor;
+   blind_factor_type     asset_blinding_factor;
    vector<blind_input>   inputs;
 
    account_id_type fee_payer()const { return GRAPHENE_TEMP_ACCOUNT; }
@@ -264,18 +270,18 @@ FC_REFLECT( graphene::chain::stealth_confirmation,
             (one_time_key)(to)(encrypted_memo) )
 
 FC_REFLECT( graphene::chain::stealth_confirmation::memo_data,
-            (from)(amount)(blinding_factor)(commitment)(check) );
+            (from)(amount)(blinding_factor)(asset_blinding_factor)(commitment)(check) );
 
 FC_REFLECT( graphene::chain::blind_memo,
             (from)(amount)(message)(check) )
 FC_REFLECT( graphene::chain::blind_input,
-            (commitment)(owner) )
+            (commitment)(asset_commitment)(owner) )
 FC_REFLECT( graphene::chain::blind_output,
-            (commitment)(range_proof)(owner)(stealth_memo) )
+            (commitment)(asset_commitment)(range_proof)(owner)(stealth_memo) )
 FC_REFLECT( graphene::chain::transfer_to_blind_operation,
-            (fee)(amount)(from)(blinding_factor)(outputs) )
+            (fee)(amount)(from)(blinding_factor)(asset_blinding_factor)(outputs) )
 FC_REFLECT( graphene::chain::transfer_from_blind_operation,
-            (fee)(amount)(to)(blinding_factor)(inputs) )
+            (fee)(amount)(to)(blinding_factor)(asset_blinding_factor)(inputs) )
 FC_REFLECT( graphene::chain::blind_transfer_operation,
             (fee)(inputs)(outputs) )
 FC_REFLECT( graphene::chain::transfer_to_blind_operation::fee_parameters_type, (fee)(price_per_output) )
