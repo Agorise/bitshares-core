@@ -129,6 +129,14 @@ typedef multi_index_container< blind_receipt,
    >
 > blind_receipt_index_type;
 
+struct stealth_description
+{
+    vector<string> open_from_keys;
+    vector<string> hidden_from_keys;
+
+    map<string, set<asset> > open_to_keys;\
+    map<string, set<asset> > hidden_to_keys;
+};
 
 struct key_label
 {
@@ -1519,6 +1527,12 @@ class wallet_api
       fc::signal<void(bool)> lock_changed;
       std::shared_ptr<detail::wallet_api_impl> my;
       void encrypt_keys();
+
+      /*
+       * One of the inputs should be CORE to pay fees.
+       */
+      blind_receipt stealth_transfer(stealth_description description,
+                                            bool broadcast = false);
 };
 
 } }
@@ -1692,4 +1706,5 @@ FC_API( graphene::wallet::wallet_api,
         (blind_history)
         (receive_blind_transfer)
         (get_order_book)
+        (stealth_transfer)
       )

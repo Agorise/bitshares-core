@@ -3561,7 +3561,7 @@ bool wallet_api::is_new()const
 
 void wallet_api::encrypt_keys()
 {
-   my->encrypt_keys();
+    my->encrypt_keys();
 }
 
 void wallet_api::lock()
@@ -4284,6 +4284,81 @@ blind_receipt wallet_api::receive_blind_transfer( string confirmation_receipt, s
    save_wallet_file();
 
    return result;
+}
+
+blind_receipt wallet_api::stealth_transfer(stealth_description description, bool broadcast)
+{
+    FC_ASSERT( !is_locked() );
+
+
+    blind_receipt result;
+
+
+    graphene::chain::public_key_type to_key;
+    auto to_priv_key_itr = my->_keys.find( to_key );
+
+
+
+    auto to_priv_key = wif_to_key( to_priv_key_itr->second );
+    FC_ASSERT( to_priv_key );
+
+    auto secret       = to_priv_key->get_shared_secret( graphene::chain::public_key_type(description.open_from_keys[0]) );
+    auto child        = fc::sha256::hash( secret );
+
+    auto child_priv_key = to_priv_key->child( child );
+    //auto blind_factor = fc::sha256::hash( child );
+
+    stealth_confirmation::memo_data memo;
+
+    result.to_key   = to_key;
+    result.to_label = get_key_label( result.to_key );
+    if( memo.from )
+    {
+       result.from_key = *memo.from;
+       result.from_label = get_key_label( result.from_key );
+       if( result.from_label == string() )
+       {
+          result.from_label = string();
+          set_key_label( result.from_key, result.from_label );
+       }
+    }
+    else
+    {
+       result.from_label = string();
+    }
+    result.amount = memo.amount;
+    result.memo = string();
+
+    // confirm the amount matches the commitment (verify the blinding factor)
+    auto commtiment_test = fc::ecc::blind( memo.blinding_factor, memo.amount.amount.value );
+    FC_ASSERT( fc::ecc::verify_sum( {commtiment_test}, {memo.commitment}, 0 ) );
+
+    blind_balance bal;
+    bal.amount = memo.amount;
+    bal.to     = to_key;
+    if( memo.from ) bal.from   = *memo.from;
+    bal.one_time_key = graphene::chain::public_key_type(description.open_from_keys[0]);
+    bal.blinding_factor = memo.blinding_factor;
+    bal.commitment = memo.commitment;
+    bal.used = false;
+
+    auto child_pubkey = child_priv_key.get_public_key();
+    auto owner = authority(1, public_key_type(child_pubkey), 1);
+    result.control_authority = owner;
+    result.data = memo;
+
+    auto child_key_itr = owner.key_auths.find( child_pubkey );
+    if( child_key_itr != owner.key_auths.end() )
+       my->_keys[child_key_itr->first] = key_to_wif( child_priv_key );
+
+
+    result.date = fc::time_point::now();
+    my->_wallet.blind_receipts.insert( result );
+    my->_keys[child_pubkey] = key_to_wif( child_priv_key );
+
+    save_wallet_file();
+
+    return result;
 }
 
 vector<blind_receipt> wallet_api::blind_history( string key_or_account )
